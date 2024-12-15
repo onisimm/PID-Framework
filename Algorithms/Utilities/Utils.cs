@@ -134,8 +134,8 @@ namespace Algorithms.Utilities
         #region Median Filter for one pixel
         public static void ApplyMedianFilterAtPixel<TColor>(Image<TColor, byte> inputImage, Image<TColor, byte> processedImage, int x, int y, int windowSize) where TColor : struct, IColor
         {
-            // Ensure the window size is odd and greater than 3
-            if (windowSize % 2 == 0 && windowSize < 3)
+            // Ensure the window size is greater than 3
+            if (windowSize < 3)
             {
                 throw new ArgumentException("Window size must be greater than 3 and odd.");
             }

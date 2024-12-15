@@ -335,16 +335,16 @@ namespace Algorithms.Tools
             // sobel X
             double[,] sobelX = new double[,]
             {
-        {-1, 0, 1},
-        {-2, 0, 2},
-        {-1, 0, 1}
+                {-1, 0, 1},
+                {-2, 0, 2},
+                {-1, 0, 1}
             };
             // sobel Y
             double[,] sobelY = new double[,]
             {
-        {-1, -2, -1},
-        { 0,  0,  0},
-        { 1,  2,  1}
+                {-1, -2, -1},
+                { 0,  0,  0},
+                { 1,  2,  1}
             };
 
             // ignore boundary pixels for simplicity
@@ -377,26 +377,23 @@ namespace Algorithms.Tools
                         }
                     }
 
-                    // combine channel gradients:
-                    // cne approach: Compute overall Gx, Gy as the magnitude of the 3D vector for each direction.
-                    double Gx = Math.Sqrt(GxR * GxR + GxG * GxG + GxB * GxB);
-                    double Gy = Math.Sqrt(GyR * GyR + GyG * GyG + GyB * GyB);
+                    double f_xx = GxR * GxR + GxG * GxG + GxB * GxB;
+                    double f_yy = GyR * GyR + GyG * GyG + GyB * GyB;
+                    double f_xy = GxR * GyR + GxG * GyG + GxB * GyB;
 
-                    double magnitude = Math.Sqrt(Gx * Gx + Gy * Gy);
-                    double orientation = Math.Atan2(Gy, Gx) * (180.0 / Math.PI); // convert to degrees for ease
+                    double lambda1 = 0.5 * (f_xx + f_yy + 
+                                            Math.Sqrt((f_xx - f_yy) * (f_xx - f_yy) + 4 * f_xy * f_xy));
 
-                    // for horizontal edges, orientation should be near ±90 degrees (gradient is vertical)
-                    // we will allow a tolerance of ±20 degrees:
-                    double tolerance = 20.0;
-                    bool isHorizontalEdge = magnitude >= threshold &&
-                                            (Math.Abs(orientation - 90) < tolerance || Math.Abs(orientation + 90) < tolerance);
+                    double maxVariation = Math.Sqrt(lambda1);
+
+                    bool isHorizontalEdge = maxVariation > threshold;
 
                     if (isHorizontalEdge)
                     {
                         // mark the edge as white
                         result.Data[y, x, 0] = 255;
                         result.Data[y, x, 1] = 255;
-                        result.Data[y, x, 2] = 255;
+                        result.Data[y, x, 2] = 255; // Red channel to mark edges
                     }
                     else // if (!isHorizontalEdge)
                     {

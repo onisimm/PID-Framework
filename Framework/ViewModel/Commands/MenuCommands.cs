@@ -926,7 +926,7 @@ namespace Framework.ViewModel
             ClearProcessedCanvas(parameter);
 
             // Prepare parameters for the dialog
-            var parameters = new List<string> { "Dimension for filter (odd and between 3-15):" };
+            var parameters = new List<string> { "Dimension for filter (between 3-15):" };
             var window = new DialogBox(_mainVM, parameters);
             window.ShowDialog();
 
@@ -938,7 +938,9 @@ namespace Framework.ViewModel
                 return;
             }
 
-            if (!int.TryParse(values[0].ToString(), out int windowDimension) || windowDimension <= 3 || windowDimension % 2 == 0) 
+            if (!int.TryParse(values[0].ToString(), out int windowDimension) ||
+                windowDimension < 3 ||
+                windowDimension > 15) 
             {
                 System.Windows.MessageBox.Show("Please enter a valid positive integer for the dimension.", "Input Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
