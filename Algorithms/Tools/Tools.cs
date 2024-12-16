@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using static Algorithms.Utilities.Utils;
+using Emgu.CV.Util;
 namespace Algorithms.Tools
 {
     public class Tools
@@ -485,15 +486,52 @@ namespace Algorithms.Tools
         #endregion
 
         #region Bilinear Scaling
-        public static Image<Bgr, byte> ScaleImageBilinear(Image<Bgr, byte> inputImage, double scale)
+
+        // Color
+        public static Image<Bgr, byte> ScaleImageBilinearHSV(Image<Bgr, byte> inputImage, double scale)
         {
             int srcWidth = inputImage.Width;
             int srcHeight = inputImage.Height;
 
+            // Convert BGR to HSV
+            Image<Hsv, byte> hsvImage = inputImage.Convert<Hsv, byte>();
+
+            // Split HSV channels
+            Image<Gray, byte>[] channels = hsvImage.Split();
+            var hChannel = channels[0];
+            var sChannel = channels[1];
+            var vChannel = channels[2];
+
+            // Apply bilinear scaling on each HSV channel
+            var hScaled = ScaleBilinearChannel(hChannel, scale);
+            var sScaled = ScaleBilinearChannel(sChannel, scale);
+            var vScaled = ScaleBilinearChannel(vChannel, scale);
+
+            // Merge back the scaled channels
+            Image<Hsv, byte> scaledHsvImage = new Image<Hsv, byte>(hScaled.Width, hScaled.Height);
+            CvInvoke.Merge(new VectorOfMat(hScaled.Mat, sScaled.Mat, vScaled.Mat), scaledHsvImage);
+
+            // Convert HSV back to BGR
+            return scaledHsvImage.Convert<Bgr, byte>();
+        }
+
+        // Grey
+        public static Image<Bgr, byte> ScaleBilinearGrayscale(Image<Gray, byte> grayImage, double scale)
+        {
+            var scaledChannel = ScaleBilinearChannel(grayImage, scale);
+
+            return scaledChannel.Convert<Bgr, byte>();
+        }
+
+        private static Image<Gray, byte> ScaleBilinearChannel(Image<Gray, byte> channel, double scale)
+        {
+            int srcWidth = channel.Width;
+            int srcHeight = channel.Height;
+
             int newWidth = (int)(srcWidth * scale);
             int newHeight = (int)(srcHeight * scale);
 
-            Image<Bgr, byte> result = new Image<Bgr, byte>(newWidth, newHeight);
+            Image<Gray, byte> result = new Image<Gray, byte>(newWidth, newHeight);
 
             for (int y = 0; y < newHeight; y++)
             {
@@ -511,16 +549,13 @@ namespace Algorithms.Tools
                     double dx = srcX - x0;
                     double dy = srcY - y0;
 
-                    // Bilinear interpolation formula
-                    for (int c = 0; c < 3; c++) // for each rgb channel. If the image is grey, it would loop only once, on the intensity channel
-                    {
-                        double value = (1 - dx) * (1 - dy) * inputImage.Data[y0, x0, c]
-                                     + dx * (1 - dy) * inputImage.Data[y0, x1, c]
-                                     + (1 - dx) * dy * inputImage.Data[y1, x0, c]
-                                     + dx * dy * inputImage.Data[y1, x1, c];
+                    // Bilinear interpolation
+                    double value = (1 - dx) * (1 - dy) * channel.Data[y0, x0, 0]
+                                 + dx * (1 - dy) * channel.Data[y0, x1, 0]
+                                 + (1 - dx) * dy * channel.Data[y1, x0, 0]
+                                 + dx * dy * channel.Data[y1, x1, 0];
 
-                        result.Data[y, x, c] = (byte)Math.Round(value);
-                    }
+                    result.Data[y, x, 0] = (byte)Math.Round(value);
                 }
             }
 

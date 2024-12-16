@@ -1128,15 +1128,24 @@ namespace Framework.ViewModel
                 return;
             }
 
-            Image<Bgr, byte> providedImage = ColorInitialImage != null
-                                            ? ColorInitialImage
-                                            : GrayInitialImage.Convert<Bgr, byte>();
-
-            // Perform scaling
             var stopwatch = Stopwatch.StartNew();
-            var scaledImage = Tools.ScaleImageBilinear(providedImage, scale);
+            Image<Bgr, byte> scaledImage;
+
+            // Handle grayscale vs colour images
+            if (ColorInitialImage != null)
+            {
+                // Colour image: scale in HSV
+                scaledImage = Tools.ScaleImageBilinearHSV(ColorInitialImage, scale);
+            }
+            else
+            {
+                // Grayscale image: directly scale the intensity channel
+                scaledImage = Tools.ScaleBilinearGrayscale(GrayInitialImage, scale);
+            }
+
             stopwatch.Stop();
 
+            // Update processed image
             ColorProcessedImage = scaledImage;
             ProcessedImage = Convert(ColorProcessedImage);
 
