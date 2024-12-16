@@ -1041,9 +1041,111 @@ namespace Framework.ViewModel
         #endregion
 
         #region Morphological operations
+
+        private ICommand _connectedComponentsCommand;
+        public ICommand ConnectedComponentsCommand
+        {
+            get
+            {
+                if (_connectedComponentsCommand == null)
+                    _connectedComponentsCommand = new RelayCommand(FindConnectedComponents);
+                return _connectedComponentsCommand;
+            }
+        }
+
+        private void FindConnectedComponents(object parameter)
+        {
+            if (InitialImage == null)
+            {
+                System.Windows.MessageBox.Show("Please add an image !");
+                return;
+            }
+
+            // Ensure we have a color image, as the requirement is for RGB images
+            if (GrayInitialImage == null)
+            {
+                System.Windows.MessageBox.Show("Please load a gray (binary) image first!");
+                return;
+            }
+
+            ClearProcessedCanvas(parameter);
+
+            // Convert to binary if needed
+            //var binaryImg = Tools.ConvertToBinary(ColorProcessedImage);
+
+            // Perform connected components analysis
+            var result = Tools.DetermineConnectedComponents(GrayInitialImage);
+
+            ColorProcessedImage = result;
+            ProcessedImage = Convert(ColorProcessedImage);
+        }
+
+
+
         #endregion
 
         #region Geometric transformations
+
+        #region Scale Image Bilinear
+
+        private ICommand _scaleImageBilinearCommand;
+        public ICommand ScaleImageBilinearCommand
+        {
+            get
+            {
+                if (_scaleImageBilinearCommand == null)
+                    _scaleImageBilinearCommand = new RelayCommand(ScaleImageBilinear);
+                return _scaleImageBilinearCommand;
+            }
+        }
+
+        // Method for Scaling
+        private void ScaleImageBilinear(object parameter)
+        {
+            if (InitialImage == null)
+            {
+                System.Windows.MessageBox.Show("Please add an image!");
+                return;
+            }
+
+
+            List<string> parameters = new List<string>() { "Scaling Factor (e.g., 0.5):" };
+            DialogBox window = new DialogBox(_mainVM, parameters);
+            window.ShowDialog();
+            List<double> values = window.GetValues();
+
+            if (values == null || values.Count == 0)
+            {
+                System.Windows.MessageBox.Show("No scaling factor provided.", "Input Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            double scale = values[0];
+
+            if (scale <= 0)
+            {
+                System.Windows.MessageBox.Show("Scaling factor must be greater than 0!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Image<Bgr, byte> providedImage = ColorInitialImage != null
+                                            ? ColorInitialImage
+                                            : GrayInitialImage.Convert<Bgr, byte>();
+
+            // Perform scaling
+            var stopwatch = Stopwatch.StartNew();
+            var scaledImage = Tools.ScaleImageBilinear(providedImage, scale);
+            stopwatch.Stop();
+
+            ColorProcessedImage = scaledImage;
+            ProcessedImage = Convert(ColorProcessedImage);
+
+            double elapsedMs = stopwatch.Elapsed.TotalMilliseconds;
+            System.Windows.MessageBox.Show($"Image scaled successfully! Elapsed time: {elapsedMs} ms", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        #endregion
+
         #endregion
 
         #region Segmentation

@@ -218,5 +218,71 @@ namespace Algorithms.Utilities
 
         #endregion
 
+        #region Disjoint
+
+        public class DisjointSet
+        {
+            private Dictionary<int, int> parent;
+            private Dictionary<int, int> rank;
+
+            public DisjointSet()
+            {
+                parent = new Dictionary<int, int>();
+                rank = new Dictionary<int, int>();
+            }
+
+            public void MakeSet(int x)
+            {
+                if (!parent.ContainsKey(x))
+                {
+                    parent[x] = x;
+                    rank[x] = 0;
+                }
+            }
+
+            public int Find(int x)
+            {
+                if (parent[x] != x)
+                    parent[x] = Find(parent[x]); // Path compression
+                return parent[x];
+            }
+
+            public int Union(int x, int y)
+            {
+                int rootX = Find(x);
+                int rootY = Find(y);
+
+                if (rootX == rootY)
+                    return rootX;
+
+                // Union by rank
+                if (rank[rootX] > rank[rootY])
+                {
+                    parent[rootY] = rootX;
+                    return rootX;
+                }
+                else if (rank[rootX] < rank[rootY])
+                {
+                    parent[rootX] = rootY;
+                    return rootY;
+                }
+                else
+                {
+                    parent[rootY] = rootX;
+                    rank[rootX]++;
+                    return rootX;
+                }
+            }
+
+            public IEnumerable<int> Components()
+            {
+                // Return the roots of all sets
+                return parent.Keys.Where(x => parent[x] == x);
+            }
+        }
+
+
+
+        #endregion
     }
 }

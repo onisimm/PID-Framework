@@ -236,12 +236,28 @@
             <MenuItem Header="Morphological operations"
                       Background="{Binding Path=Theme.MenuItemBackgroundColor}"
                       Foreground="{Binding Path=Theme.MenuItemForegroundColor}">
+                <MenuItem Header="Componente conexe"
+                          Foreground="#1E1E1E"
+                          Command="{Binding Path=MenuCommands.ConnectedComponentsCommand}"
+                          CommandParameter="{Binding ElementName=canvasProcessedImage}"/>
+
 
             </MenuItem>
 
             <MenuItem Header="Geometric transformations"
                       Background="{Binding Path=Theme.MenuItemBackgroundColor}"
                       Foreground="{Binding Path=Theme.MenuItemForegroundColor}">
+
+                <MenuItem Header="Scale Image (Bilinear)"
+                          Foreground="#1E1E1E"
+                          Command="{Binding Path=MenuCommands.ScaleImageBilinearCommand}">          
+                    <MenuItem.CommandParameter>
+                        <MultiBinding Converter="{StaticResource arrayMultiValueConverter}">
+                            <Binding ElementName="canvasOriginalImage"/>
+                            <Binding ElementName="canvasProcessedImage"/>
+                        </MultiBinding>
+                    </MenuItem.CommandParameter>
+                </MenuItem>
 
             </MenuItem>
 

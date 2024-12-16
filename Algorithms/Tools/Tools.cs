@@ -7,6 +7,8 @@ using System;
 using Algorithms.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using static Algorithms.Utilities.Utils;
 namespace Algorithms.Tools
 {
     public class Tools
@@ -409,6 +411,123 @@ namespace Algorithms.Tools
         }
 
         #endregion
-    }
 
+        #region Conex (connected) Components Determination
+        public static Image<Bgr, byte> DetermineConnectedComponents(Image<Gray, byte> binImg)
+        {
+            if (binImg == null)
+            {
+                throw new ArgumentNullException(nameof(binImg), "The input binary image is null. Ensure it is loaded or generated first.");
+            }
+
+            int width = binImg.Width;
+            int height = binImg.Height;
+
+            int[,] labels = new int[height, width];
+            var uf = new DisjointSet();
+
+            // First pass: assign provisional labels and union sets
+            int nextLabel = 1;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    if (binImg.Data[y, x, 0] > 0) // Foreground pixel
+                    {
+                        int leftLabel = (x > 0) ? labels[y, x - 1] : 0;
+                        int topLabel = (y > 0) ? labels[y - 1, x] : 0;
+
+                        if (leftLabel == 0 && topLabel == 0)
+                        {
+                            labels[y, x] = nextLabel;
+                            uf.MakeSet(nextLabel);
+                            nextLabel++;
+                        }
+                        else if (leftLabel > 0 && topLabel == 0)
+                        {
+                            labels[y, x] = leftLabel;
+                        }
+                        else if (leftLabel == 0 && topLabel > 0)
+                        {
+                            labels[y, x] = topLabel;
+                        }
+                        else
+                        {
+                            // Merge sets if different
+                            int root = uf.Union(leftLabel, topLabel);
+                            labels[y, x] = root;
+                        }
+                    }
+                }
+            }
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int lbl = labels[y, x];
+                    if (lbl > 0)
+                    {
+                        labels[y, x] = uf.Find(lbl); // Flatten the labels
+                    }
+                }
+            }
+
+            var result = new Image<Bgr, byte>(width, height, new Bgr(0, 0, 0));
+
+            throw new ArgumentNullException(nameof(binImg), "Work In Progress");
+            // TODO: work in progress
+            return result;
+        }
+
+
+
+        #endregion
+
+        #region Bilinear Scaling
+        public static Image<Bgr, byte> ScaleImageBilinear(Image<Bgr, byte> inputImage, double scale)
+        {
+            int srcWidth = inputImage.Width;
+            int srcHeight = inputImage.Height;
+
+            int newWidth = (int)(srcWidth * scale);
+            int newHeight = (int)(srcHeight * scale);
+
+            Image<Bgr, byte> result = new Image<Bgr, byte>(newWidth, newHeight);
+
+            for (int y = 0; y < newHeight; y++)
+            {
+                for (int x = 0; x < newWidth; x++)
+                {
+                    // Map destination pixel to source coordinates
+                    double srcX = x / scale;
+                    double srcY = y / scale;
+
+                    int x0 = (int)Math.Floor(srcX);
+                    int y0 = (int)Math.Floor(srcY);
+                    int x1 = Math.Min(x0 + 1, srcWidth - 1);
+                    int y1 = Math.Min(y0 + 1, srcHeight - 1);
+
+                    double dx = srcX - x0;
+                    double dy = srcY - y0;
+
+                    // Bilinear interpolation formula
+                    for (int c = 0; c < 3; c++) // for each rgb channel. If the image is grey, it would loop only once, on the intensity channel
+                    {
+                        double value = (1 - dx) * (1 - dy) * inputImage.Data[y0, x0, c]
+                                     + dx * (1 - dy) * inputImage.Data[y0, x1, c]
+                                     + (1 - dx) * dy * inputImage.Data[y1, x0, c]
+                                     + dx * dy * inputImage.Data[y1, x1, c];
+
+                        result.Data[y, x, c] = (byte)Math.Round(value);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+
+        #endregion
+    }
 }
